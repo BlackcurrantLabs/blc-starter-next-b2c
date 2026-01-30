@@ -1,0 +1,171 @@
+// Prisma schema file, add all models here and run `npx prisma generate` to update the client.
+
+generator client {
+  provider   = "prisma-client"
+  output     = "../src/database/prisma"
+  engineType = "client"
+}
+
+generator zod {
+  provider = "prisma-zod-generator"
+  output   = "../src/database/zod"
+  config   = "./prisma-zod-generator.config.json"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// Add custom fields that need to be present in session to @/auth.ts also.
+
+model User {
+  // Base fields added by Better Auth
+  id            String    @id
+  name          String    @db.Text
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  // Admin Roles and permissions added by Better Auth
+  role          String?   @db.Text
+  banned        Boolean?  @default(false)
+  banReason     String?   @db.Text
+  banExpires    DateTime?
+  married       Boolean   @default(false)
+
+  // Custom fields for user profile
+  // add all of these you need access to in client to @/auth.ts
+  // add in @/providers also if these are to be set in signups
+  designation   String? @db.VarChar(10)
+  company       String? @db.VarChar(100)
+  phone         String? @db.VarChar(12)
+  countryCode   String? @db.VarChar(4)
+  phoneVerified Boolean @default(false)
+
+  // Blog author relation
+  blogPosts     BlogPost[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String? @db.Text
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String?  @db.Text
+  email     String   @db.Text
+  subject   String?  @db.Text
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+  referrer  String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("contact_messages")
+}
+
+model BlogCategory {
+  id        String     @id @default(cuid())
+  name      String     @db.VarChar(100)
+  slug      String     @unique @db.VarChar(100)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  posts     BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogTag {
+  id        String        @id @default(cuid())
+  name      String        @db.VarChar(100)
+  slug      String        @unique @db.VarChar(100)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  posts     BlogPostTag[]
+
+  @@map("blog_tags")
+}
+
+model BlogPost {
+  id               String        @id @default(cuid())
+  title            String        @db.VarChar(255)
+  slug             String        @unique @db.VarChar(255)
+  content          Json
+  featuredImageUrl String?       @db.Text
+  metaDescription  String?       @db.VarChar(160)
+  ogImageUrl       String?       @db.Text
+  status           String        @default("draft") @db.VarChar(20)
+  publishedAt      DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  authorId         String
+  author           User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categoryId       String
+  category         BlogCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  tags             BlogPostTag[]
+
+  @@map("blog_posts")
+}
+
+model BlogPostTag {
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
+}
