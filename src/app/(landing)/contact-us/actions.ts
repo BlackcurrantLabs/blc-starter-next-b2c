@@ -1,12 +1,12 @@
 "use server";
 
 import { headers } from "next/headers";
-import { TableState } from "@tanstack/react-table";
 import { createElement } from "react";
 
+import type { TableQuery } from "@/components/tables/table-features";
 import prisma from "@/database/datasource";
 import { Prisma } from "@/database/prisma/client";
-import { verifyAltchaPayload } from "@/lib/altcha/verify";
+import { verifyAltchaPayload } from "@/lib/altcha/server";
 import { sendTemplateEmail } from "@/lib/email";
 import { ContactAcknowledgementEmail } from "@/emails/contact-acknowledgement-email";
 import { env } from "@/lib/env";
@@ -15,7 +15,7 @@ import { contactUsSchema, type ContactUsInput } from "./validation";
 
 export async function submitContactMessage(input: ContactUsInput) {
   const data = contactUsSchema.parse(input);
-  const verification = verifyAltchaPayload(data.altcha);
+  const verification = await verifyAltchaPayload(data.altcha);
   if (!verification.ok) {
     return { ok: false, error: "captcha" } as const;
   }
@@ -50,7 +50,7 @@ export async function submitContactMessage(input: ContactUsInput) {
   return { ok: true, id: contactMessage.id } as const;
 }
 
-export async function searchContactMessages(tableState: TableState) {
+export async function searchContactMessages(tableState: TableQuery) {
   const skip = tableState.pagination.pageIndex * tableState.pagination.pageSize;
   const take = tableState.pagination.pageSize;
 

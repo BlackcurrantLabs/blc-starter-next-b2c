@@ -1,4 +1,4 @@
-import { Column } from "@tanstack/react-table"
+import type { Column, RowData } from "@tanstack/react-table"
 import { Check, FilterIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -20,14 +20,15 @@ import {
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { FilterOption } from "@/lib/namespace"
+import type { AppTableFeatures } from "./table-features"
 
-interface DataTableFacetedFilterProps<TData, TValue> {
-  column?: Column<TData, TValue>
+interface DataTableFacetedFilterProps<TData extends RowData, TValue> {
+  column?: Column<AppTableFeatures, TData, TValue>
   title?: string
   options: FilterOption[]
 }
 
-export function DataTableFacetedFilter<TData, TValue>({
+export function DataTableFacetedFilter<TData extends RowData, TValue>({
   column,
   title,
   options,

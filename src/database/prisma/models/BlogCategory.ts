@@ -158,7 +158,7 @@ export type BlogCategoryGroupByOutputType = {
   _max: BlogCategoryMaxAggregateOutputType | null
 }
 
-type GetBlogCategoryGroupByPayload<T extends BlogCategoryGroupByArgs> = Prisma.PrismaPromise<
+export type GetBlogCategoryGroupByPayload<T extends BlogCategoryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<BlogCategoryGroupByOutputType, T['by']> &
       {
@@ -1025,6 +1025,11 @@ export type BlogCategoryFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Skip the first `n` BlogCategories.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of BlogCategories.
+   */
   distinct?: Prisma.BlogCategoryScalarFieldEnum | Prisma.BlogCategoryScalarFieldEnum[]
 }
 

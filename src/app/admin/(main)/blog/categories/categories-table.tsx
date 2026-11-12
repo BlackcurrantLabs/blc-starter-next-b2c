@@ -4,8 +4,7 @@ import { useState } from "react";
 import {
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -49,12 +48,16 @@ import {
   CategoryFormValues,
 } from "./_components/category-form";
 import { DataTableColumnHeader } from "@/components/tables/data-table-column-header";
+import {
+  appTableFeatures,
+  type AppTableFeatures,
+} from "@/components/tables/table-features";
 
 interface CategoriesTableProps {
   initialData: CategoryWithCount[];
 }
 
-const columnHelper = createColumnHelper<CategoryWithCount>();
+const columnHelper = createColumnHelper<AppTableFeatures, CategoryWithCount>();
 
 export function CategoriesTable({ initialData }: CategoriesTableProps) {
   const [data, setData] = useState(initialData);
@@ -105,7 +108,7 @@ export function CategoriesTable({ initialData }: CategoriesTableProps) {
     }
   };
 
-  const columns = [
+  const columns = columnHelper.columns([
     columnHelper.accessor("name", {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
@@ -198,12 +201,12 @@ export function CategoriesTable({ initialData }: CategoriesTableProps) {
         </div>
       ),
     }),
-  ];
+  ]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (

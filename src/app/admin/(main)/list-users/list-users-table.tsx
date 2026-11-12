@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,18 @@ import { Prisma } from "@/database/prisma/client";
 import {
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  TableState,
-  InitialTableState,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
+import {
+  appTableFeatures,
+  type AppInitialTableState,
+  type AppTableFeatures,
+} from "@/components/tables/table-features";
 
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -41,11 +41,11 @@ import Link from "next/link";
 export interface ListUsersTableProps {
   readonly initialData: Prisma.UserModel[];
   readonly initialTotal: number;
-  readonly initialState: InitialTableState;
+  readonly initialState: AppInitialTableState;
 }
 
-const columnHelper = createColumnHelper<Prisma.UserModel>();
-const columns = [
+const columnHelper = createColumnHelper<AppTableFeatures, Prisma.UserModel>();
+const columns = columnHelper.columns([
   columnHelper.accessor("name", {
     header: ({ column }) => (
       <DataTableColumnHeader
@@ -144,7 +144,7 @@ const columns = [
         className="text-end"
       ></DataTableColumnHeader>
     ),
-    cell: ({ row, cell }) => (
+    cell: ({ row }) => (
       <div className="text-end">
       <Link href={`/admin/user-details/${row.id}`}>
         <Button variant={"secondary"} size={"icon"}>
@@ -154,7 +154,7 @@ const columns = [
       </div>
     ),
   }),
-];
+]);
 
 export default function ListUsersTable({
   initialData,
@@ -163,51 +163,43 @@ export default function ListUsersTable({
 }: ListUsersTableProps) {
   const [data, setData] = useState(initialData);
   const [total, setTotal] = useState(initialTotal);
-  const skipPageResetRef = useRef(true);
   const router = useRouter();
 
-  const [tableState, setTableState] = useState<TableState>(
-    initialState as TableState
-  );
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await searchUsers(table.getState());
-
-      // When data gets updated with this function, set a flag
-      // to disable all of the auto resetting
-      skipPageResetRef.current = true;
-
-      setData(result.users);
-      setTotal(result.total);
-    };
-    fetchData();
-  }, [
-    tableState.globalFilter,
-    tableState.columnFilters,
-    tableState.sorting,
-    tableState.pagination,
-  ]);
-
-  useEffect(() => {
-    // After the table has updated, always remove the flag
-    skipPageResetRef.current = false;
-  });
-
-  const table = useReactTable({
+  // The table owns its state (seeded from `initialState`); searching, sorting
+  // and paging all happen on the server.
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns,
     rowCount: total,
-    state: tableState,
     initialState,
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
-    autoResetAll: !skipPageResetRef,
-    onStateChange: setTableState,
+    autoResetAll: false,
     getRowId: (row) => row.id,
-    getCoreRowModel: getCoreRowModel(),
   });
+
+  const { globalFilter, columnFilters, sorting, pagination } = table.state;
+
+  useEffect(() => {
+    let isCurrent = true;
+    const fetchData = async () => {
+      const result = await searchUsers({
+        globalFilter,
+        columnFilters,
+        sorting,
+        pagination,
+      });
+      if (!isCurrent) return;
+      setData(result.users);
+      setTotal(result.total);
+    };
+    fetchData();
+    return () => {
+      isCurrent = false;
+    };
+  }, [globalFilter, columnFilters, sorting, pagination]);
 
   const addUser = () => {
     router.push("/admin/user-details/new");

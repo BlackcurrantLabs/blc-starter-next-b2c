@@ -1,0 +1,12 @@
+# pnpm settings live here since pnpm 11 (the "pnpm" field in package.json is no longer read).
+
+# Dependencies allowed to run install scripts. pnpm fails the install when a
+# dependency has a build script that is not listed here; review it, then add it
+# as true (run) or false (skip). `pnpm approve-builds` does this interactively.
+allowBuilds:
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  core-js: false
+  esbuild: true
+  prisma: true
+  prisma-zod-generator: false

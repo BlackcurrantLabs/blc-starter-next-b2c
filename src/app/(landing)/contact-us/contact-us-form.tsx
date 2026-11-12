@@ -27,6 +27,9 @@ export function ContactUsForm() {
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // A captcha payload can only be redeemed once, so after a failed submit the
+  // widget is remounted (new key) to make the visitor solve a fresh challenge.
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   const form = useForm<ContactUsFormValues>({
     resolver: zodResolver(contactUsSchema),
@@ -42,18 +45,26 @@ export function ContactUsForm() {
   const onSubmit = (values: ContactUsFormValues) => {
     setErrorMessage(null);
     startTransition(async () => {
-      const result = await submitContactMessage(values);
-      if (result.ok) {
-        setStatus("success");
-        form.reset();
-        return;
+      let isCaptchaError = false;
+      try {
+        const result = await submitContactMessage(values);
+        if (result.ok) {
+          setStatus("success");
+          form.reset();
+          return;
+        }
+        isCaptchaError = result.error === "captcha";
+      } catch {
+        // Fall through to the generic error below.
       }
       setStatus("error");
       setErrorMessage(
-        result.error === "captcha"
+        isCaptchaError
           ? "Captcha verification failed. Please try again."
-          : "Something went wrong."
+          : "Something went wrong. Please try again."
       );
+      form.setValue("altcha", "");
+      setCaptchaKey((key) => key + 1);
     });
   };
 
@@ -140,6 +151,7 @@ export function ContactUsForm() {
               <FormLabel>Verification</FormLabel>
               <FormControl>
                 <AltchaWidget
+                  key={captchaKey}
                   onVerifiedAction={(payload) =>
                     form.setValue("altcha", payload, { shouldValidate: true })
                   }

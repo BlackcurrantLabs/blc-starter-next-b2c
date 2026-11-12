@@ -1,9 +1,8 @@
-// Prisma schema file, add all models here and run `npx prisma generate` to update the client.
+// Prisma schema file, add all models here and run `pnpm regenerate-schema` to update the client.
 
 generator client {
-  provider   = "prisma-client"
-  output     = "../src/database/prisma"
-  engineType = "client"
+  provider = "prisma-client"
+  output   = "../src/database/prisma"
 }
 
 generator zod {

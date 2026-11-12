@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
-  TableState,
-  InitialTableState,
+  useTable,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -34,6 +31,11 @@ import { DataTableColumnHeader } from "@/components/tables/data-table-column-hea
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import {
+  appTableFeatures,
+  type AppInitialTableState,
+  type AppTableFeatures,
+} from "@/components/tables/table-features";
+import {
   ExternalLink,
   FilePlus,
   FileText,
@@ -49,10 +51,12 @@ import {
   deletePost,
 } from "./_actions/post-actions";
 
+const columnHelper = createColumnHelper<AppTableFeatures, PostWithRelations>();
+
 interface PostsTableProps {
   initialData: PostWithRelations[];
   initialTotal: number;
-  initialState: InitialTableState;
+  initialState: AppInitialTableState;
 }
 
 export function PostsTable({
@@ -62,39 +66,15 @@ export function PostsTable({
 }: PostsTableProps) {
   const [data, setData] = useState(initialData);
   const [total, setTotal] = useState(initialTotal);
-  const skipPageResetRef = useRef(true);
+  // Bumped to re-run the search after a mutation (e.g. delete).
+  const [reloadToken, setReloadToken] = useState(0);
   const router = useRouter();
-
-  const [tableState, setTableState] = useState<TableState>(
-    initialState as TableState
-  );
-
-  const refreshData = async () => {
-    const result = await searchPosts(tableState);
-    skipPageResetRef.current = true;
-    setData(result.posts);
-    setTotal(result.total);
-  };
-
-  useEffect(() => {
-    refreshData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    tableState.globalFilter,
-    tableState.columnFilters,
-    tableState.sorting,
-    tableState.pagination,
-  ]);
-
-  useEffect(() => {
-    skipPageResetRef.current = false;
-  });
 
   const handleDelete = async (post: PostWithRelations) => {
     try {
       await deletePost(post.id);
       toast.success("Post deleted successfully");
-      await refreshData();
+      setReloadToken((token) => token + 1);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete post"
@@ -102,11 +82,7 @@ export function PostsTable({
     }
   };
 
-
-
-  const columnHelper = createColumnHelper<PostWithRelations>();
-
-  const columns = [
+  const columns = columnHelper.columns([
     columnHelper.accessor("title", {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Title" />
@@ -223,22 +199,43 @@ export function PostsTable({
         </div>
       ),
     }),
-  ];
+  ]);
 
-  const table = useReactTable({
+  // The table owns its state (seeded from `initialState`); searching, sorting
+  // and paging all happen on the server.
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns,
     rowCount: total,
-    state: tableState,
     initialState,
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
-    autoResetAll: !skipPageResetRef,
-    onStateChange: setTableState,
+    autoResetAll: false,
     getRowId: (row) => row.id,
-    getCoreRowModel: getCoreRowModel(),
   });
+
+  const { globalFilter, columnFilters, sorting, pagination } = table.state;
+
+  useEffect(() => {
+    let isCurrent = true;
+    const fetchData = async () => {
+      const result = await searchPosts({
+        globalFilter,
+        columnFilters,
+        sorting,
+        pagination,
+      });
+      if (!isCurrent) return;
+      setData(result.posts);
+      setTotal(result.total);
+    };
+    fetchData();
+    return () => {
+      isCurrent = false;
+    };
+  }, [globalFilter, columnFilters, sorting, pagination, reloadToken]);
 
   const handleCreate = () => {
     router.push("/admin/blog/posts/create");

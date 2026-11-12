@@ -1,8 +1,10 @@
-import { InitialTableState, TableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import { searchContactMessages } from "@/app/(landing)/contact-us/actions";
 import ContactUsTable from "./contact-us-table";
 
-const initialTableState: InitialTableState = {
+const initialTableState: TableQuery = {
+  globalFilter: "",
+  columnFilters: [],
   pagination: {
     pageIndex: 0,
     pageSize: 10,
@@ -11,8 +13,7 @@ const initialTableState: InitialTableState = {
 };
 
 export default async function ContactUsPage() {
-  const tableState = initialTableState as TableState;
-  const { messages, total } = await searchContactMessages(tableState);
+  const { messages, total } = await searchContactMessages(initialTableState);
 
   return (
     <div className="p-6">
@@ -25,7 +26,7 @@ export default async function ContactUsPage() {
       <ContactUsTable
         initialMessages={messages}
         initialTotal={total}
-        initialState={tableState}
+        initialState={initialTableState}
       />
     </div>
   );

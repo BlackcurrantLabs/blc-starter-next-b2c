@@ -1,7 +1,7 @@
 # Blackcurrant Stack Starter Next B2C
 
 This is a boilerplate for starting new projects. 
-B2C SaaS starter template built with Next.js 15+, Prisma, BetterAuth, and Tailwind 4.
+B2C SaaS starter template built with Next.js 16, Prisma 7, BetterAuth, and Tailwind 4.
 It's an opionated set of frameworks and tools hand picked for our general use cases.
 This may not fit every use case.
 
@@ -46,8 +46,22 @@ If you need B2B (Users have Orgs, invite within org to collaborate), start from 
 
 ## Requirements
 
-- Node.js 22 LTS
-- pnpm 10.x
+- Node.js 26 LTS (see `.nvmrc`)
+- pnpm 12.x (pinned via `packageManager` in `package.json`; pnpm downloads the pinned version automatically)
+
+## Getting Started
+
+```bash
+pnpm install
+cp example.env .env        # then fill in the values
+pnpm prisma migrate dev    # apply the schema to your database
+pnpm dev
+```
+
+Notes:
+
+- pnpm refuses to install a dependency whose install script has not been reviewed. Approved/denied scripts are listed under `allowBuilds` in `pnpm-workspace.yaml`; run `pnpm approve-builds` when a new dependency needs one.
+- Always use the local Prisma CLI (`pnpm prisma …`). `npx prisma` / `prisma@latest` currently resolve to the Prisma 8 release candidate.
 
 ## Environment Variables
 

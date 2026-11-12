@@ -1,9 +1,9 @@
-import { InitialTableState, TableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import { PostsTable } from "./posts-table";
 import { searchPosts } from "./_actions/post-actions";
 
 export default async function BlogPostsPage() {
-  const initialState: InitialTableState = {
+  const initialState: TableQuery = {
     globalFilter: "",
     columnFilters: [],
     sorting: [
@@ -18,7 +18,7 @@ export default async function BlogPostsPage() {
     },
   };
 
-  const data = await searchPosts(initialState as TableState);
+  const data = await searchPosts(initialState);
 
   return (
     <PostsTable

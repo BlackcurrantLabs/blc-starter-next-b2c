@@ -1,23 +1,24 @@
 "use client"
 
-import { Table } from "@tanstack/react-table"
+import type { ReactTable, RowData } from "@tanstack/react-table"
 import { X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 import { FilterOption } from "@/lib/namespace"
+import type { AppTableFeatures } from "./table-features"
 
-interface DataTableToolbarProps<TData> {
-  table: Table<TData>
+interface DataTableToolbarProps<TData extends RowData> {
+  table: ReactTable<AppTableFeatures, TData>
   tableActions?: React.ReactNode[]
 }
 
-export function DataTableToolbar<TData>({
+export function DataTableToolbar<TData extends RowData>({
   table,
   tableActions = []
 }: Readonly<DataTableToolbarProps<TData>>) {
-  const isFiltered = table.getState().columnFilters.length > 0
+  const isFiltered = table.state.columnFilters.length > 0
 
   return (
     <div className="flex items-center justify-between">
@@ -25,7 +26,7 @@ export function DataTableToolbar<TData>({
         {/* Global Search */}
         <Input
           placeholder="Search..."
-          value={table.getState().globalFilter}
+          value={table.state.globalFilter ?? ""}
           onChange={(event) =>
             table.setGlobalFilter(String(event.target.value))
           }

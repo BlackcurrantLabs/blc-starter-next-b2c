@@ -8,7 +8,7 @@ export default async function UserDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Welcome Back!</CardTitle>
-          <CardDescription>Here's what's happening with your account.</CardDescription>
+          <CardDescription>Here&apos;s what&apos;s happening with your account.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">

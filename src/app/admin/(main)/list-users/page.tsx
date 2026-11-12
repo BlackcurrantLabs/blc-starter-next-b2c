@@ -1,11 +1,11 @@
-import { InitialTableState, TableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import ListUsersTable from "./list-users-table";
 import { searchUsers } from "./search.action";
 
-export default async function ListUsers({ initialState }: Readonly<{ initialState?: InitialTableState }>) {
+export default async function ListUsers({ initialState }: Readonly<{ initialState?: TableQuery }>) {
 
   // Define a default initial state
-  const defaultInitialState: InitialTableState = {
+  const defaultInitialState: TableQuery = {
     globalFilter: "",
     columnFilters: [
       {
@@ -29,7 +29,7 @@ export default async function ListUsers({ initialState }: Readonly<{ initialStat
   const state = initialState ?? defaultInitialState;
 
   // get data table data as per initial state
-  const data = await searchUsers(state as TableState);
+  const data = await searchUsers(state);
 
   // render page with prepopulated initial state and data
   // use only the server action when state changes for changing data based on state

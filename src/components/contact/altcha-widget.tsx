@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+// Registers <altcha-widget> in React's JSX types (type-only, no runtime import).
+import type {} from "altcha/types/react";
 
 type AltchaWidgetProps = {
   onVerifiedAction: (payload: string) => void;
@@ -31,7 +33,7 @@ export function AltchaWidget({ onVerifiedAction }: AltchaWidgetProps) {
   return (
     <altcha-widget
       ref={widgetRef}
-      challengeurl="/api/altcha-challenge"
+      challenge="/api/altcha-challenge"
       name="altcha"
       auto="onsubmit"
     />

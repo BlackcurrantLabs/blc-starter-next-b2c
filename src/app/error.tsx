@@ -1,20 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
+import type { ErrorInfo } from "next/error";
 import { Button } from "@/components/ui/button";
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function Error({ error, retry }: ErrorInfo) {
   useEffect(() => {
+    // `error` is `unknown`: anything can be thrown, not just Error instances.
+    const isError = error instanceof globalThis.Error;
     console.error("[App Error]", {
-      message: error.message,
-      digest: error.digest,
-      stack: error.stack,
+      message: isError ? error.message : String(error),
+      digest:
+        typeof error === "object" && error !== null && "digest" in error
+          ? String(error.digest)
+          : undefined,
+      stack: isError ? error.stack : undefined,
     });
   }, [error]);
 
@@ -24,7 +24,7 @@ export default function Error({
       <p className="text-muted-foreground">
         We ran into an unexpected error. Please try again.
       </p>
-      <Button onClick={reset}>Retry</Button>
+      <Button onClick={() => retry()}>Retry</Button>
     </div>
   );
 }

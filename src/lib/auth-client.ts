@@ -7,7 +7,7 @@
 import { createAuthClient } from "better-auth/react"; // make sure to import from better-auth/react
 import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 import { ac, admin, vendor, customer, user } from "@/permissions";
-import { auth } from "@/auth";
+import type { auth } from "@/auth";
 
 export const authClient = createAuthClient({
   //you can pass client configuration here

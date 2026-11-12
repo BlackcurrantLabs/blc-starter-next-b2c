@@ -41,7 +41,6 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 20,
     resetPasswordTokenExpiresIn: 60 * 15, // 15 minutes
-    verificationTokenExpiresIn: 3600, // 1 hour
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url, token: _token }) => {
       await sendTemplateEmail({

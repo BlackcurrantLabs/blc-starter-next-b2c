@@ -1,10 +1,10 @@
 "use server";
 
 import prisma from "@/database/datasource";
-import type { TableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import { UserWhereInput } from "@/database/prisma/models";
 
-export async function searchUsers(tableState: TableState) {
+export async function searchUsers(tableState: TableQuery) {
   const skip = tableState.pagination.pageIndex * tableState.pagination.pageSize;
   const take = tableState.pagination.pageSize;
 

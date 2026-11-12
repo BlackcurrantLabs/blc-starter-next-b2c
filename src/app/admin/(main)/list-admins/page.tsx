@@ -1,9 +1,9 @@
-import { InitialTableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import ListUsers from "../list-users/page";
 
 export default async function ListAdmins() {
   // Define a default initial state
-  const adminInitialState: InitialTableState = {
+  const adminInitialState: TableQuery = {
     globalFilter: "",
     columnFilters: [
       {

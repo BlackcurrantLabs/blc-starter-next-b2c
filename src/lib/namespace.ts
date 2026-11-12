@@ -1,4 +1,4 @@
-import { RowData } from '@tanstack/react-table'
+import type { CellData, RowData, TableFeatures } from '@tanstack/react-table'
 
 export interface FilterOption<TValue = string | boolean, TData = RowData> {
   value: TValue,
@@ -8,7 +8,8 @@ export interface FilterOption<TValue = string | boolean, TData = RowData> {
 }
 
 declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData extends RowData, TValue> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData = CellData> {
     filterTitle: string,
     filterOptions: FilterOption<TValue, TData>[]
   }

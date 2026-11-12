@@ -67,7 +67,7 @@
 
 ### 3. Migrations
 
-* **Descriptive names**: `npx prisma migrate dev --name add-order-totals`
+* **Descriptive names**: `pnpm prisma migrate dev --name add-order-totals` (always the local CLI, never `npx prisma`)
 * **Idempotent steps**: avoid imperative SQL in migrations.
 * **Shadow database**: enable in CI to catch drift.
 * **Never edit** migration SQL after it’s applied to any environment.
@@ -77,11 +77,17 @@
 * **Singleton pattern**
 
   ```ts
-  // prisma.ts
-  import { PrismaClient } from '@prisma/client';
-  export const prisma = global.prisma || new PrismaClient();
-  if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
+  // src/database/datasource.ts — Prisma 7: generated client + driver adapter
+  import { PrismaClient } from '@/database/prisma/client';
+  import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+
+  const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+  const prisma =
+    globalForPrisma.prisma ?? new PrismaClient({ adapter: new PrismaMariaDb({ /* connection options */ }) });
+  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+  export default prisma;
   /```
+* Import the shared instance (`import prisma from '@/database/datasource'`); never construct another client.
 
 ### 5. Transactions & Batch Operations
 
@@ -117,7 +123,7 @@
   const users = await prisma.$queryRaw`SELECT * FROM "User" WHERE email = ${email}`;
   /```
 * **Sanitize inputs** with `Prisma.sql` for complex interpolations.
-* **Client extensions**: use preview feature `clientExtensions` to add common helper methods.
+* **Client extensions**: use `prisma.$extends(...)` to add common helper methods (generally available, no preview flag).
 
 ### 8. Error Handling
 
@@ -159,11 +165,6 @@
 ### 12. Environment & Configuration
 
 * **Centralize `DATABASE_URL`** and connection settings in `.env`.
-* **Pin preview features** in `schema.prisma`:
-
-  ```prisma
-  generator client {
-    previewFeatures = ["clientExtensions", "interactiveTransactions"]
-  }
-  /```
-* **Version pinning**: match CLI and client versions in `package.json`.
+* **Connection settings** for Prisma CLI commands live in `prisma.config.ts` (the `datasource` block in `schema.prisma` has no `url` in Prisma 7).
+* **Preview features**: only list ones still in preview for the installed version (`clientExtensions` and `interactiveTransactions` are generally available).
+* **Version pinning**: keep `prisma`, `@prisma/client` and `@prisma/adapter-mariadb` on the same version in `package.json`.

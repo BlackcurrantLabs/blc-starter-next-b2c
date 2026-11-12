@@ -10,13 +10,21 @@
 | Build | `pnpm build` |
 | Lint | `pnpm lint` |
 | Regenerate Prisma | `pnpm regenerate-schema` |
-| Migrations | `npx prisma migrate dev --name <description>` |
+| Migrations | `pnpm prisma migrate dev --name <description>` |
+| Approve a dependency's install script | `pnpm approve-builds` |
 
 **No test runner configured.** Manual verification required.
 
+## Toolchain
+
+- Node.js 26 LTS (`.nvmrc`) and pnpm 12 (pinned by `packageManager` in `package.json`; pnpm switches to that version automatically).
+- pnpm settings live in `pnpm-workspace.yaml`, not `package.json` or `.npmrc`. Installs fail on any dependency with an unreviewed install script: add it to `allowBuilds` there (`true` to run, `false` to skip).
+- Always run Prisma through the local install (`pnpm prisma …`). Never use `npx prisma`, `prisma@latest` or `pnpm up --latest` for Prisma: the `latest` tag of the `prisma` CLI points at the 8.0 release candidate, which has no matching `@prisma/client`. Stay on the 7.x line until 8.0 is final.
+- TypeScript stays on 6.0.x: typescript-eslint (used by `eslint-config-next`) does not support TypeScript 6.1+ / 7 yet.
+
 ## Tech Stack
 
-Next.js 15 (App Router, Turbopack) + React 19 | TypeScript (strict) | Prisma (MySQL/MariaDB) | BetterAuth | Tailwind v4 | shadcn/ui | react-hook-form + Zod | TanStack Table
+Next.js 16 (App Router, Turbopack) + React 19 | TypeScript 6 (strict) | Prisma 7 (MySQL/MariaDB) | BetterAuth | Tailwind v4 | shadcn/ui | react-hook-form + Zod | TanStack Table v9
 
 ## Project Structure
 
@@ -35,7 +43,7 @@ src/
     prisma/            # Generated client (DO NOT EDIT)
     zod/               # Generated Zod schemas (DO NOT EDIT)
   lib/                 # Utilities
-  middleware.ts        # Auth redirect middleware
+  proxy.ts             # Auth redirect proxy (Next.js 16 name for middleware.ts)
   permissions.ts       # Role definitions
 prisma/schema.prisma   # Database schema (source of truth)
 ```
@@ -86,10 +94,14 @@ import { Button } from "@/components/ui/button";
 "use server";
 import prisma from "@/database/datasource";
 
-export async function searchUsers(tableState: TableState) {
+export async function searchUsers(tableState: TableQuery) {
   // Implementation
 }
 ```
+
+### Error Boundaries
+- `error.tsx` / `global-error.tsx` take `{ error, retry }: ErrorInfo` from `next/error`. `error` is `unknown` — narrow it before reading `.message`.
+- Prefer `retry()` (re-fetches and re-renders) over `reset()`.
 
 ### Auth
 - Access session: `auth.api.getSession({ headers: await headers() })`
@@ -100,7 +112,7 @@ export async function searchUsers(tableState: TableState) {
 
 ### After Schema Changes
 ```bash
-npx prisma migrate dev --name <descriptive-name>
+pnpm prisma migrate dev --name <descriptive-name>
 pnpm regenerate-schema
 ```
 
@@ -138,6 +150,21 @@ import { cn } from "@/lib/utils";
 - Builder: https://www.shadcn-form.com/playground
 - Generated schemas: `@/database/zod`
 
+### Tables (TanStack Table v9)
+- v9 is opt-in: a table only has the state/APIs of the features it registers. All tables share `appTableFeatures` from `src/components/tables/table-features.ts`; add new features there.
+- Create tables with `useTable({ features: appTableFeatures, data, columns, ... })` and columns with `createColumnHelper<AppTableFeatures, TData>()` wrapped in `columnHelper.columns([...])`.
+- Read state from `table.state` (there is no `table.getState()`). Never put `table` in a `useEffect` dependency array — depend on the state slices (`pagination`, `sorting`, …).
+- Server actions that search take a `TableQuery` (`import type` from the same file).
+- v8 names that no longer exist: `useReactTable`, `getCoreRowModel`, `InitialTableState`, `onStateChange`.
+
+### Captcha (ALTCHA)
+- Widget: `src/components/contact/altcha-widget.tsx` (`altcha` v3). Server: `src/lib/altcha/server.ts`, built on the official `altcha-lib` — do not hand-roll challenge creation or verification.
+- A payload can be redeemed once. After a failed submit, clear the form value and remount the widget (see `contact-us-form.tsx`).
+- The replay store is in-memory per process; swap in a shared store when running multiple instances or serverless.
+
+### Emails
+- Templates live in `src/emails/` and import components and `render` from `react-email` (the `@react-email/components` package is deprecated).
+
 ### Navigation (Admin/User Portals)
 - Navigation metadata lives with each portal:
   - `src/app/user/(main)/_components/user-nav-data.ts`
@@ -172,6 +199,7 @@ Reference: `example.env`
 ## Do NOT
 
 - Edit `src/database/prisma/` or `src/database/zod/` (generated)
+- Run `npx prisma` or upgrade Prisma with `--latest` (pulls the 8.0 RC)
 - Use Pages Router patterns
 - Add `as any` or type suppressions
 - Commit `.env` files

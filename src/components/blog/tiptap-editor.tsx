@@ -64,6 +64,9 @@ export function TiptapEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        // StarterKit v3 bundles Link; it is registered separately below with
+        // custom options, so disable the bundled copy to avoid a duplicate.
+        link: false,
       }),
       Image.configure({
         HTMLAttributes: {
@@ -395,6 +398,9 @@ export function TiptapViewer({ content, className }: TiptapViewerProps) {
         heading: {
           levels: [1, 2, 3],
         },
+        // StarterKit v3 bundles Link; it is registered separately below with
+        // custom options, so disable the bundled copy to avoid a duplicate.
+        link: false,
       }),
       Image.configure({
         HTMLAttributes: {

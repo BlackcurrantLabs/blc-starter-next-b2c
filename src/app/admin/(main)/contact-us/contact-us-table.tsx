@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  InitialTableState,
-  TableState,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
 
 import { DataTablePagination } from "@/components/tables/data-table-pagination";
 import { DataTableToolbar } from "@/components/tables/data-table-toolbar";
 import { DataTableColumnHeader } from "@/components/tables/data-table-column-header";
+import {
+  appTableFeatures,
+  type AppInitialTableState,
+  type AppTableFeatures,
+} from "@/components/tables/table-features";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,15 +33,23 @@ import {
   searchContactMessages,
 } from "@/app/(landing)/contact-us/actions";
 
+interface MessageDetail {
+  readonly id: string;
+  readonly message: Prisma.ContactMessageModel | null;
+}
+
 export interface ContactUsTableProps {
   readonly initialMessages: Prisma.ContactMessageModel[];
   readonly initialTotal: number;
-  readonly initialState: InitialTableState;
+  readonly initialState: AppInitialTableState;
 }
 
-const columnHelper = createColumnHelper<Prisma.ContactMessageModel>();
+const columnHelper = createColumnHelper<
+  AppTableFeatures,
+  Prisma.ContactMessageModel
+>();
 
-const columns = [
+const columns = columnHelper.columns([
   columnHelper.accessor("email", {
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Email" />
@@ -82,7 +92,7 @@ const columns = [
       ],
     },
   }),
-];
+]);
 
 function formatDate(value: Date) {
   return new Date(value).toLocaleString();
@@ -93,59 +103,66 @@ export default function ContactUsTable({
   initialTotal,
   initialState,
 }: ContactUsTableProps) {
-  const [tableState, setTableState] = useState<TableState>(
-    initialState as TableState
-  );
   const [messages, setMessages] = useState(initialMessages);
   const [total, setTotal] = useState(initialTotal);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialMessages[0]?.id ?? null
   );
-  const [selectedMessage, setSelectedMessage] =
-    useState<Prisma.ContactMessageModel | null>(initialMessages[0] ?? null);
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  // The most recently loaded detail, tagged with the id it was loaded for so
+  // "loading" and "selected message" can be derived instead of stored.
+  const [detail, setDetail] = useState<MessageDetail | null>(
+    initialMessages[0]
+      ? { id: initialMessages[0].id, message: initialMessages[0] }
+      : null
+  );
+  const isDetailCurrent = selectedId !== null && detail?.id === selectedId;
+  const selectedMessage = isDetailCurrent ? detail.message : null;
+  const isLoadingDetail = selectedId !== null && !isDetailCurrent;
 
-  const table = useReactTable({
+  // The table owns its state (seeded from `initialState`); searching, sorting
+  // and paging all happen on the server.
+  const table = useTable({
+    features: appTableFeatures,
     data: messages,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    state: tableState,
-    onStateChange: setTableState,
+    initialState,
     rowCount: total,
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
   });
 
+  const { globalFilter, columnFilters, sorting, pagination } = table.state;
+
+  // Depend on the state slices, never on `table` itself: `useTable` returns a
+  // new table object on every render.
   useEffect(() => {
     let isMounted = true;
     const loadMessages = async () => {
-      const result = await searchContactMessages(table.getState());
+      const result = await searchContactMessages({
+        globalFilter,
+        columnFilters,
+        sorting,
+        pagination,
+      });
       if (!isMounted) return;
       setMessages(result.messages);
       setTotal(result.total);
-      if (result.messages.length && !selectedId) {
-        setSelectedId(result.messages[0].id);
-      }
+      setSelectedId((current) => current ?? result.messages[0]?.id ?? null);
     };
     loadMessages();
     return () => {
       isMounted = false;
     };
-  }, [tableState, table, selectedId]);
+  }, [globalFilter, columnFilters, sorting, pagination]);
 
   useEffect(() => {
-    if (!selectedId) {
-      setSelectedMessage(null);
-      return;
-    }
+    if (!selectedId) return;
     let isMounted = true;
-    setIsLoadingDetail(true);
     const loadDetail = async () => {
       const result = await getContactMessage(selectedId);
       if (!isMounted) return;
-      setSelectedMessage(result);
-      setIsLoadingDetail(false);
+      setDetail({ id: selectedId, message: result });
     };
     loadDetail();
     return () => {
@@ -159,7 +176,7 @@ export default function ContactUsTable({
       selectedMessage.id,
       !selectedMessage.isRead
     );
-    setSelectedMessage(updated);
+    setDetail({ id: updated.id, message: updated });
     setMessages((prev) =>
       prev.map((message) =>
         message.id === updated.id ? { ...message, ...updated } : message

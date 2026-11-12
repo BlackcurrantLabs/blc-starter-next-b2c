@@ -4,8 +4,7 @@ import { useState } from "react";
 import {
   createColumnHelper,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -46,12 +45,16 @@ import {
 } from "./_actions/tag-actions";
 import { TagForm, TagFormValues } from "./_components/tag-form";
 import { DataTableColumnHeader } from "@/components/tables/data-table-column-header";
+import {
+  appTableFeatures,
+  type AppTableFeatures,
+} from "@/components/tables/table-features";
 
 interface TagsTableProps {
   initialData: TagWithCount[];
 }
 
-const columnHelper = createColumnHelper<TagWithCount>();
+const columnHelper = createColumnHelper<AppTableFeatures, TagWithCount>();
 
 export function TagsTable({ initialData }: TagsTableProps) {
   const [data, setData] = useState(initialData);
@@ -102,7 +105,7 @@ export function TagsTable({ initialData }: TagsTableProps) {
     }
   };
 
-  const columns = [
+  const columns = columnHelper.columns([
     columnHelper.accessor("name", {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
@@ -195,12 +198,12 @@ export function TagsTable({ initialData }: TagsTableProps) {
         </div>
       ),
     }),
-  ];
+  ]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: appTableFeatures,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (

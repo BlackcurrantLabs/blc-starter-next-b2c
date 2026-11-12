@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/database/datasource";
-import type { TableState } from "@tanstack/react-table";
+import type { TableQuery } from "@/components/tables/table-features";
 import { BlogPostWhereInput } from "@/database/prisma/models";
 import { auth } from "@/auth";
 import { headers } from "next/headers";
@@ -28,7 +28,7 @@ export interface PostFormData {
   tagIds: string[];
 }
 
-export async function searchPosts(tableState: TableState) {
+export async function searchPosts(tableState: TableQuery) {
   const skip = tableState.pagination.pageIndex * tableState.pagination.pageSize;
   const take = tableState.pagination.pageSize;
 
